@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
 import os
+import sys
+
+
 try:
     from setuptools import setup
 except ImportError:
@@ -26,6 +27,11 @@ else:
     __version__ += '.localbuild'  # set version as major.minor.localbuild if local build: python setup.py install
 
 print("dohq-artifactory build version = {}".format(__version__))
+
+INSTALL_REQUIRES = ['requests', 'python-dateutil']
+
+if sys.hexversion < 0x0306000F:
+    INSTALL_REQUIRES.append('pathlib')
 
 setup(
     name='dohq-artifactory',
@@ -51,7 +57,7 @@ setup(
     ],
     url='https://devopshq.github.io/artifactory/',
     download_url='https://github.com/devopshq/artifactory',
-    install_requires=['pathlib', 'requests', 'python-dateutil'],
+    install_requires=INSTALL_REQUIRES,
     zip_safe=False,
     package_data={'': ['README.md']}
 )

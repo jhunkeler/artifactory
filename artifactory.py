@@ -204,6 +204,10 @@ def sha1sum(filename):
     return sha1.hexdigest()
 
 
+class ArtifactoryError(Exception):
+    pass
+
+
 class HTTPResponseWrapper(object):
     """
     This class is intended as a workaround for 'requests' module
@@ -469,7 +473,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
         if code == 404 and "Unable to find item" in text:
             raise OSError(2, "No such file or directory: '%s'" % url)
         if code != 200:
-            raise RuntimeError(text)
+            raise ArtifactoryError(text)
 
         return json.loads(text)
 
@@ -566,7 +570,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
         text, code = self.rest_put(url, session=pathobj.session, verify=pathobj.verify, cert=pathobj.cert)
 
         if not code == 201:
-            raise RuntimeError("%s %d" % (text, code))
+            raise ArtifactoryError(text)
 
     def rmdir(self, pathobj):
         """
@@ -582,7 +586,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
         text, code = self.rest_del(url, session=pathobj.session, verify=pathobj.verify, cert=pathobj.cert)
 
         if code not in [200, 202, 204]:
-            raise RuntimeError("Failed to delete directory: '%s'" % text)
+            raise ArtifactoryError(text)
 
     def unlink(self, pathobj):
         """
@@ -598,7 +602,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
                                    cert=pathobj.cert)
 
         if code not in [200, 202, 204]:
-            raise RuntimeError("Failed to delete file: %d '%s'" % (code, text))
+            raise ArtifactoryError(text)
 
     def touch(self, pathobj):
         """
@@ -614,7 +618,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
         text, code = self.rest_put(url, session=pathobj.session, verify=pathobj.verify, cert=pathobj.cert)
 
         if not code == 201:
-            raise RuntimeError("%s %d" % (text, code))
+            raise ArtifactoryError(text)
 
     def owner(self, pathobj):
         """
@@ -653,7 +657,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
                                          cert=pathobj.cert)
 
         if not code == 200:
-            raise RuntimeError("%d" % code)
+            raise ArtifactoryError(json.dumps({'errors': [{'status': code, 'message':''}]}, indent=2))
 
         return raw
 
@@ -685,7 +689,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
                                           cert=pathobj.cert)
 
         if code not in [200, 201]:
-            raise RuntimeError("%s" % text)
+            raise ArtifactoryError(text)
 
     def copy(self, src, dst, suppress_layouts=False):
         """
@@ -705,7 +709,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
                                     cert=src.cert)
 
         if code not in [200, 201]:
-            raise RuntimeError("%s" % text)
+            raise ArtifactoryError(text)
 
     def move(self, src, dst):
         """
@@ -724,7 +728,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
                                     cert=src.cert)
 
         if code not in [200, 201]:
-            raise RuntimeError("%s" % text)
+            raise ArtifactoryError(text)
 
     def get_properties(self, pathobj):
         """
@@ -747,7 +751,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
         if code == 404 and "No properties could be found" in text:
             return {}
         if code != 200:
-            raise RuntimeError(text)
+            raise ArtifactoryError(text)
 
         return json.loads(text)['properties']
 
@@ -773,7 +777,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
         if code == 404 and "Unable to find item" in text:
             raise OSError(2, "No such file or directory: '%s'" % url)
         if code != 204:
-            raise RuntimeError(text)
+            raise ArtifactoryError(text)
 
     def del_properties(self, pathobj, props, recursive):
         """
@@ -800,7 +804,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
         if code == 404 and "Unable to find item" in text:
             raise OSError(2, "No such file or directory: '%s'" % url)
         if code != 204:
-            raise RuntimeError(text)
+            raise ArtifactoryError(text)
 
 
 _artifactory_accessor = _ArtifactoryAccessor()
@@ -1331,8 +1335,8 @@ def walk(pathobj, topdown=True):
             nondirs.append(relpath)
     if topdown:
         yield pathobj, dirs, nondirs
-    for dir in dirs:
-        for result in walk(pathobj / dir):
+    for dir_name in dirs:
+        for result in walk(pathobj / dir_name):
             yield result
     if not topdown:
         yield pathobj, dirs, nondirs
