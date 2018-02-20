@@ -410,6 +410,11 @@ ArtifactoryFileStat = collections.namedtuple(
      'children'])
 
 
+def error_to_json(code=None, message=''):
+    result = json.dumps({'errors': [{'status': code, 'message': message}]}, indent=2)
+    return result
+
+
 class _ArtifactoryAccessor(pathlib._Accessor):
     """
     Implements operations with Artifactory REST API
@@ -657,7 +662,7 @@ class _ArtifactoryAccessor(pathlib._Accessor):
                                          cert=pathobj.cert)
 
         if not code == 200:
-            raise ArtifactoryError(json.dumps({'errors': [{'status': code, 'message':''}]}, indent=2))
+            raise ArtifactoryError(error_to_json(code, 'Unable to open stream'))
 
         return raw
 
